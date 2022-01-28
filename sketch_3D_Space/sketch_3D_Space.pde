@@ -1,15 +1,25 @@
 import java.awt.Robot;
 
+//Colors
+color black = #000000;
+color white = #ffffff;
+
+//Map Vari
+int gridSize;
+PImage map;
+
 Robot rbt;
+
+boolean skipFrame;
 
 boolean wkey, akey, skey, dkey;
 float eyeX, eyeY, eyeZ, focusX, focusY, focusZ, tiltX, tiltY, tiltZ;
 float leftRightHeadAngle, upDownHeadAngle;
 
 void setup() {
-  size(displayWidth, displayHeight, P3D);
+  fullScreen(P3D);
   textureMode(NORMAL);
-  //noCursor();
+  noCursor();
   skey = akey = skey = dkey = false;
   eyeX = width/2;
   eyeY = height/2;
@@ -20,6 +30,11 @@ void setup() {
   tiltX = 0;
   tiltY = 1;
   tiltZ = 0;
+
+  //Inital Map
+  map = loadImage("map.png");
+  gridSize = 100;
+
   leftRightHeadAngle = radians(270);
   try {
     rbt = new Robot();
@@ -35,7 +50,25 @@ void draw() {
   drawFloor();
   drawFocalPoint();
   controlCam();
+  drawMap();
 }
+
+void drawMap() {
+  for (int x = 0; x < map.width; x++) {
+    for (int y = 0; y <map.height; y++) {
+      color c = map.get(x, y);
+      if (c != white) {
+        pushMatrix();
+        fill(c);
+        stroke(100);
+        translate(x*gridSize-2000, height/2, y*gridSize-2000);
+        box(gridSize, height, gridSize);
+        popMatrix();
+      }
+    }
+  }
+}
+
 
 void drawFocalPoint() {
   pushMatrix();
@@ -46,11 +79,11 @@ void drawFocalPoint() {
 
 void drawFloor() {
   //stroke(#ff00ff);
-  for (int x = -10000; x <= 10000; x = x + 100) {
+  for (int x = -2000; x <= 2000; x = x + 100) {
     stroke(#00ff00);
-    line(x, height, -10000, x, height, 10000);
+    line(x, height, -2000, x, height, 2000);
     stroke(#0000ff);
-    line(-10000, height, x, 10000, height, x);
+    line(-2000, height, x, 2000, height, x);
   }
 }
 
@@ -74,8 +107,11 @@ void controlCam() {
     eyeZ = eyeZ + sin(leftRightHeadAngle + PI/2)*20;
   }
 
-  leftRightHeadAngle = leftRightHeadAngle + (mouseX - pmouseX)*0.005;
-  upDownHeadAngle = upDownHeadAngle + (mouseY - pmouseY)*0.005;
+  if (skipFrame == false) {
+    leftRightHeadAngle = leftRightHeadAngle + (mouseX - pmouseX)*0.005;
+    upDownHeadAngle = upDownHeadAngle + (mouseY - pmouseY)*0.005;
+  }
+
   if (upDownHeadAngle > PI/2.5) upDownHeadAngle = PI/2.5;
   if (upDownHeadAngle > -PI/2.5) upDownHeadAngle = -PI/2.5;
 
@@ -83,8 +119,15 @@ void controlCam() {
   focusZ = eyeZ + sin(leftRightHeadAngle)*300;
   focusY = eyeY + tan(upDownHeadAngle)*300;
 
-  if (mouseX > width-2) rbt.mouseMove(3,mouseY);
-  else if (mouseX < 2)  rbt.mouseMove(width-3, mouseY);
+  if (mouseX < 2) {
+    rbt.mouseMove(width-3, mouseY);
+    skipFrame = true;
+  } else if (mouseX > width-2) {
+    rbt.mouseMove(3, mouseY);
+    skipFrame = true;
+  } else {
+    skipFrame = false;
+  }
 }
 
 void keyPressed() {
